@@ -1,5 +1,6 @@
 import typer
 import os
+from rich.prompt import Prompt
 
 def generate_controller_file(controller_name: str, model_name: str):
     template = f"""from fastapi import (
@@ -133,8 +134,11 @@ def make_controller(name: str, model_name: str = None):
     """
     Create a new controller file.
     """
+    if not name:
+        print(f"No provided controller name (raw input = {name})")
+        raise typer.Abort()
     if model_name is None:
-        model_name = typer.prompt("Enter the model name for this controller")
+        model_name = Prompt.ask("Enter the model name for this controller")
     controller_content = generate_controller_file(name, model_name)
     
     os.makedirs("./api", exist_ok=True)

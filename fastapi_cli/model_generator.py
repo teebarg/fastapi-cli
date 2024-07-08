@@ -1,6 +1,7 @@
 import typer
 import os
 from typing import List, Dict
+from rich.prompt import Prompt
 
 def generate_model_file(model_name: str, fields: List[Dict[str, str]]):
     template = f"""from typing import Optional
@@ -31,19 +32,22 @@ def generate_fields(fields):
 def prompt_for_fields() -> List[Dict[str, str]]:
     fields = []
     while True:
-        field_name = typer.prompt("Enter field name (or press Enter to finish)")
+        field_name = Prompt.ask("Enter field name (or press Enter to finish)")
         if not field_name:
             break
         
-        field_type = typer.prompt(f"Enter type for {field_name}")
+        field_type = Prompt.ask(f"Enter type for {field_name}", choices=["int", "str", "bool", "EmailStr"], default="str")
         
         field_properties = {}
         while True:
-            property = typer.prompt(f"Enter property for {field_name} (e.g., default=None, or press Enter to finish)")
+            property = Prompt.ask(f"Enter property for {field_name} (e.g., default=None, unique=True, index=True, or press Enter to finish)")
             if not property:
                 break
-            key, value = property.split('=')
-            field_properties[key.strip()] = value.strip()
+            try:
+                key, value = property.split('=')
+                field_properties[key.strip()] = value.strip()
+            except Exception as e:
+                print(f"{e}")
         
         fields.append({"name": field_name, "type": field_type, "properties": field_properties})
     return fields
@@ -52,6 +56,9 @@ def make_model(name: str):
     """
     Create a new model file.
     """
+    if not name:
+        print(f"No provided model name (raw input = {name})")
+        raise typer.Abort()
     fields = prompt_for_fields()
     model_content = generate_model_file(name, fields)
     

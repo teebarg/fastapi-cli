@@ -5,7 +5,7 @@ A command-line interface for generating models and controllers in FastAPI projec
 ## Installation
 
 ```bash
-pip install git+https://github.com/yourusername/fastapi-cli.git
+pip install git+https://github.com/teebarg/fastapi-cli.git
 ```
 
 ## Usage
@@ -23,6 +23,12 @@ fastapi-cli make:all User
 - `make-model`: Create a new model file
 - `make-controller`: Create a new controller file
 - `make:all`: Create both model and controller files
+
+## Help
+
+```bash
+fastapi-cli make-model --help
+```
 
 ## License
 
