@@ -15,6 +15,7 @@ After installation, you can use the `fastapi-cli` command in your terminal:
 ```bash
 fastapi-cli make-model User
 fastapi-cli make-controller UserController
+fastapi-cli make-crud User
 fastapi-cli make:all User
 ```
 
@@ -22,6 +23,7 @@ fastapi-cli make:all User
 
 - `make-model`: Create a new model file
 - `make-controller`: Create a new controller file
+- `make-crud` : Create a new crud file
 - `make:all`: Create both model and controller files
 
 ## Help

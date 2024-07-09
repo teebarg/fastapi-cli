@@ -139,7 +139,7 @@ def make_controller(name: str, model_name: str = None):
         raise typer.Abort()
     if model_name is None:
         model_name = Prompt.ask("Enter the model name for this controller")
-    controller_content = generate_controller_file(name, model_name)
+    controller_content = generate_controller_file(name, model_name=model_name.capitalize())
     
     os.makedirs("./api", exist_ok=True)
     
