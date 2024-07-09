@@ -121,7 +121,7 @@ def update(
             status_code=404,
             detail="{model_name} not found",
         )
-    
+
     try:
         db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in=update_data)
         return db_{model_name.lower()}
@@ -157,10 +157,10 @@ def make_controller(model_name: str = None):
     if not model_name:
         model_name = Prompt.ask("Enter the model name for this controller")
     controller_content = generate_controller_file(model_name=model_name.capitalize())
-    
+
     os.makedirs("./api", exist_ok=True)
-    
+
     with open(f"./api/{model_name.lower()}.py", "w") as f:
         f.write(controller_content)
-    
+
     typer.echo(f"Controller file created: ./api/{model_name.lower()}.py")

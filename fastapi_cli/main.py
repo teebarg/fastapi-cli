@@ -16,7 +16,7 @@ def make_all(name: str):
     """
     typer.echo(f"Creating model and controller for {name}")
     make_model(name)
-    make_controller(f"{name}Controller", model_name=name)
+    make_controller(model_name=name)
     make_crud(model_name=name)
 
 if __name__ == "__main__":
