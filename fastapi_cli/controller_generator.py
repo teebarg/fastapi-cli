@@ -3,7 +3,7 @@ import os
 from rich.prompt import Prompt
 
 def generate_controller_file(controller_name: str, model_name: str):
-    template = f"""from fastapi import (
+    return f"""from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
@@ -15,7 +15,7 @@ import crud
 from core.deps import (
     CurrentUser,
     SessionDep,
-    get_current_active_superuser,
+    get_current_user,
 )
 
 from models.message import Message
@@ -32,7 +32,7 @@ router = APIRouter()
 
 @router.get(
     "/",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(get_current_user)],
     response_model={model_name}sPublic,
 )
 def index(
@@ -71,13 +71,20 @@ def index(
 
 
 @router.post(
-    "/", dependencies=[Depends(get_current_active_superuser)], response_model={model_name}Public
+    "/", dependencies=[Depends(get_current_user)], response_model={model_name}Public
 )
-def create(*, db: SessionDep, {model_name.lower()}_in: {model_name}Create) -> Any:
+def create(*, db: SessionDep, create_data: {model_name}Create) -> Any:
     \"\"\"
     Create new {model_name.lower()}.
     \"\"\"
-    {model_name.lower()} = crud.{model_name.lower()}.create(db=db, obj_in={model_name.lower()}_in)
+    {model_name.lower()} = crud.{model_name.lower()}.get_by_key(db=db, value=create_data.name)
+    if {model_name.lower()}:
+        raise HTTPException(
+            status_code=400,
+            detail="The {model_name.lower()} already exists in the system.",
+        )
+
+    {model_name.lower()} = crud.{model_name.lower()}.create(db=db, obj_in=create_data)
     return {model_name.lower()}
 
 @router.get("/{{id}}", response_model={model_name}Public)
@@ -95,14 +102,14 @@ def read(
 
 @router.patch(
     "/{{id}}",
-    dependencies=[Depends(get_current_active_superuser)],
+    dependencies=[Depends(get_current_user)],
     response_model={model_name}Public,
 )
 def update(
     *,
     db: SessionDep,
     id: int,
-    {model_name.lower()}_in: {model_name}Update,
+    update_data: {model_name}Update,
 ) -> Any:
     \"\"\"
     Update a {model_name.lower()}.
@@ -111,13 +118,13 @@ def update(
     if not db_{model_name.lower()}:
         raise HTTPException(
             status_code=404,
-            detail="The {model_name.lower()} with this id does not exist in the system",
+            detail="{model_name} not found",
         )
-    db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in={model_name.lower()}_in)
+    db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in=update_data)
     return db_{model_name.lower()}
 
 
-@router.delete("/{{id}}", dependencies=[Depends(get_current_active_superuser)])
+@router.delete("/{{id}}", dependencies=[Depends(get_current_user)])
 def delete(db: SessionDep, id: int) -> Message:
     \"\"\"
     Delete a {model_name.lower()}.
@@ -128,7 +135,6 @@ def delete(db: SessionDep, id: int) -> Message:
     crud.{model_name.lower()}.remove(db=db, id=id)
     return Message(message="{model_name} deleted successfully")
 """
-    return template
 
 def make_controller(name: str, model_name: str = None):
     """
