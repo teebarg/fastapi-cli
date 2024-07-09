@@ -130,12 +130,12 @@ def update(
         if "psycopg2.errors.UniqueViolation" in str(e):
             raise HTTPException(
                 status_code=422,
-                detail=f"{e}",
-            )
+                detail=str(e),
+            ) as e
         raise HTTPException(
             status_code=400,
-            detail="f"{e}",
-        )
+            detail=str(e),
+        ) as e
 
 
 @router.delete("/{{id}}", dependencies=[Depends(get_current_user)])
