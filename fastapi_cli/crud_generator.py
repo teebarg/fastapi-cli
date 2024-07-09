@@ -2,14 +2,10 @@ import typer
 import os
 
 def generate_crud_file(model_name: str):
-    template = f"""from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Query,
-)
+    template = f"""
 from sqlmodel import Session, select
 
+from core.utils import generate_slug
 from crud.base import CRUDBase
 from models.{model_name.lower()} import {model_name}, {model_name}Create, {model_name}Update
 
@@ -18,7 +14,7 @@ class CRUD{model_name}(CRUDBase[{model_name}, {model_name}Create, {model_name}Up
     def create(self, db: Session, {model_name.lower()}_create: {model_name}Create) -> {model_name}:
         db_obj = {model_name}.model_validate(
             {model_name.lower()}_create,
-            update={"key":1},
+            update={"slug:generate_slug(name=obj_in.name)"},
         )
         db.add(db_obj)
         db.commit()

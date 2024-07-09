@@ -5,7 +5,6 @@ from rich.prompt import Prompt
 
 def generate_model_file(model_name: str, fields: List[Dict[str, str]]):
     template = f"""from typing import Optional
-from pydantic import EmailStr
 from sqlmodel import Field, SQLModel
 
 class {model_name}Base(SQLModel):
@@ -19,6 +18,16 @@ class {model_name}Update({model_name}Base):
 
 class {model_name}(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+
+class {model_name}Public({model_name}Base):
+    id: int
+
+class {model_name}s(SQLModel):
+    {model_name.lower()}s: list[{model_name}]
+    page: int
+    per_page: int
+    total_count: int
+    total_pages: int
 """
     return template
 

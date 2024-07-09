@@ -2,7 +2,7 @@ import typer
 import os
 from rich.prompt import Prompt
 
-def generate_controller_file(controller_name: str, model_name: str):
+def generate_controller_file(model_name: str):
     return f"""from fastapi import (
     APIRouter,
     Depends,
@@ -23,9 +23,10 @@ from models.{model_name.lower()} import (
     {model_name},
     {model_name}Create,
     {model_name}Public,
-    {model_name}sPublic,
+    {model_name}s,
     {model_name}Update,
 )
+from core.logging import logger
 
 # Create a router for {model_name.lower()}s
 router = APIRouter()
@@ -33,14 +34,14 @@ router = APIRouter()
 @router.get(
     "/",
     dependencies=[Depends(get_current_user)],
-    response_model={model_name}sPublic,
+    response_model={model_name}Public,
 )
 def index(
     db: SessionDep,
     name: str = "",
     page: int = Query(default=1, gt=0),
     per_page: int = Query(default=20, le=100),
-) -> Any:
+) -> {model_name}s:
     \"\"\"
     Retrieve {model_name.lower()}s.
     \"\"\"
@@ -73,7 +74,7 @@ def index(
 @router.post(
     "/", dependencies=[Depends(get_current_user)], response_model={model_name}Public
 )
-def create(*, db: SessionDep, create_data: {model_name}Create) -> Any:
+def create(*, db: SessionDep, create_data: {model_name}Create) -> {model_name}Public:
     \"\"\"
     Create new {model_name.lower()}.
     \"\"\"
@@ -89,8 +90,8 @@ def create(*, db: SessionDep, create_data: {model_name}Create) -> Any:
 
 @router.get("/{{id}}", response_model={model_name}Public)
 def read(
-    id: int, db: SessionDep, current_user: CurrentUser
-) -> Any:
+    id: int, db: SessionDep
+) -> {model_name}Public:
     \"\"\"
     Get a specific {model_name.lower()} by id.
     \"\"\"
@@ -110,7 +111,7 @@ def update(
     db: SessionDep,
     id: int,
     update_data: {model_name}Update,
-) -> Any:
+) -> {model_name}Public:
     \"\"\"
     Update a {model_name.lower()}.
     \"\"\"
@@ -120,8 +121,21 @@ def update(
             status_code=404,
             detail="{model_name} not found",
         )
-    db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in=update_data)
-    return db_{model_name.lower()}
+    
+    try:
+        db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in=update_data)
+        return db_{model_name.lower()}
+    except Exception as e:
+        logger.error(e)
+        if "psycopg2.errors.UniqueViolation" in str(e):
+            raise HTTPException(
+                status_code=422,
+                detail=f"{e}",
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="f"{e}",
+        )
 
 
 @router.delete("/{{id}}", dependencies=[Depends(get_current_user)])
@@ -136,20 +150,17 @@ def delete(db: SessionDep, id: int) -> Message:
     return Message(message="{model_name} deleted successfully")
 """
 
-def make_controller(name: str, model_name: str = None):
+def make_controller(model_name: str = None):
     """
     Create a new controller file.
     """
-    if not name:
-        print(f"No provided controller name (raw input = {name})")
-        raise typer.Abort()
-    if model_name is None:
+    if not model_name:
         model_name = Prompt.ask("Enter the model name for this controller")
-    controller_content = generate_controller_file(name, model_name=model_name.capitalize())
+    controller_content = generate_controller_file(model_name=model_name.capitalize())
     
     os.makedirs("./api", exist_ok=True)
     
-    with open(f"./api/{name.lower()}.py", "w") as f:
+    with open(f"./api/{model_name.lower()}.py", "w") as f:
         f.write(controller_content)
     
-    typer.echo(f"Controller file created: ./api/{name.lower()}.py")
+    typer.echo(f"Controller file created: ./api/{model_name.lower()}.py")
