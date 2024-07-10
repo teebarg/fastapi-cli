@@ -34,7 +34,7 @@ router = APIRouter()
 @router.get(
     "/",
     dependencies=[Depends(get_current_user)],
-    response_model={model_name}Public,
+    response_model={model_name}s,
 )
 def index(
     db: SessionDep,
@@ -62,8 +62,8 @@ def index(
 
     total_pages = (total_count // per_page) + (total_count % per_page > 0)
 
-    return {model_name}sPublic(
-        data={model_name.lower()}s,
+    return {model_name}s(
+        {model_name}s={model_name.lower()}s,
         page=page,
         per_page=per_page,
         total_pages=total_pages,
@@ -87,6 +87,7 @@ def create(*, db: SessionDep, create_data: {model_name}Create) -> {model_name}Pu
 
     {model_name.lower()} = crud.{model_name.lower()}.create(db=db, obj_in=create_data)
     return {model_name.lower()}
+
 
 @router.get("/{{id}}", response_model={model_name}Public)
 def read(
@@ -131,11 +132,11 @@ def update(
             raise HTTPException(
                 status_code=422,
                 detail=str(e),
-            ) as e
+            ) from e
         raise HTTPException(
             status_code=400,
             detail=str(e),
-        ) as e
+        ) from e
 
 
 @router.delete("/{{id}}", dependencies=[Depends(get_current_user)])

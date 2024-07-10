@@ -11,9 +11,9 @@ from models.{model_name.lower()} import {model_name}, {model_name}Create, {model
 
 
 class CRUD{model_name}(CRUDBase[{model_name}, {model_name}Create, {model_name}Update]):
-    def create(self, db: Session, {model_name.lower()}_create: {model_name}Create) -> {model_name}:
+    def create(self, db: Session, obj_in: {model_name}Create) -> {model_name}:
         db_obj = {model_name}.model_validate(
-            {model_name.lower()}_create,
+            obj_in,
             update={"slug:generate_slug(name=obj_in.name)"},
         )
         db.add(db_obj)
@@ -34,10 +34,10 @@ def make_crud(model_name: str):
         print(f"No provided model name (raw input = {model_name})")
         raise typer.Abort()
     controller_content = generate_crud_file(model_name=model_name.capitalize())
-    
+
     os.makedirs("./crud", exist_ok=True)
-    
+
     with open(f"./crud/{model_name.lower()}.py", "w") as f:
         f.write(controller_content)
-    
+
     typer.echo(f"Crud file created: ./crud/{model_name.lower()}.py")
