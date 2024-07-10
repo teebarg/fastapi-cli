@@ -126,13 +126,13 @@ def update(
     try:
         db_{model_name.lower()} = crud.{model_name.lower()}.update(db=db, db_obj=db_{model_name.lower()}, obj_in=update_data)
         return db_{model_name.lower()}
+    except IntegrityError as e:
+        logger.error(f"Error updating tag, str(e.orig.pgerror)")
+        raise HTTPException(
+            status_code=422, detail=str(e.orig.pgerror)
+        ) from e
     except Exception as e:
         logger.error(e)
-        if "psycopg2.errors.UniqueViolation" in str(e):
-            raise HTTPException(
-                status_code=422,
-                detail=str(e),
-            ) from e
         raise HTTPException(
             status_code=400,
             detail=str(e),
@@ -144,11 +144,17 @@ def delete(db: SessionDep, id: int) -> Message:
     \"\"\"
     Delete a {model_name.lower()}.
     \"\"\"
-    {model_name.lower()} = crud.{model_name.lower()}.get(db=db, id=id)
-    if not {model_name.lower()}:
-        raise HTTPException(status_code=404, detail="{model_name} not found")
-    crud.{model_name.lower()}.remove(db=db, id=id)
-    return Message(message="{model_name} deleted successfully")
+    try:
+        {model_name.lower()} = crud.{model_name.lower()}.get(db=db, id=id)
+        if not {model_name.lower()}:
+            raise HTTPException(status_code=404, detail="{model_name} not found")
+        crud.{model_name.lower()}.remove(db=db, id=id)
+        return Message(message="{model_name} deleted successfully")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        ) from e
 """
 
 def make_controller(model_name: str = None):
