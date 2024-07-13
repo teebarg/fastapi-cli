@@ -5,10 +5,15 @@ from rich.prompt import Prompt
 def generate_controller_file(model_name: str):
     return f"""from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
+    File,
+    Form,
     HTTPException,
     Query,
+    UploadFile,
 )
+from typing import Annotated
 from sqlmodel import func, or_, select
 
 import crud
@@ -27,6 +32,7 @@ from models.{model_name.lower()} import (
     {model_name}Update,
 )
 from core.logging import logger
+from services.export import export, process_file, validate_file
 
 # Create a router for {model_name.lower()}s
 router = APIRouter()
@@ -155,6 +161,36 @@ def delete(db: SessionDep, id: int) -> Message:
             status_code=500,
             detail=str(e),
         ) from e
+
+
+@router.post("/excel/{{task_id}}")
+async def upload_{model_name.lower()}s(
+    file: Annotated[UploadFile, File()],
+    batch: Annotated[str, Form()],
+    task_id: str,
+    db: SessionDep,
+    background_tasks: BackgroundTasks,
+):
+    await validate_file(file=file)
+
+    contents = await file.read()
+    background_tasks.add_task(process_file, contents, task_id, db, crud.{model_name.lower()}.bulk_upload)
+    return {{"batch": batch, "message": "File upload started"}}
+
+
+@router.post("/export")
+async def export_{model_name.lower()}s(
+    current_user: deps.CurrentUser, db: SessionDep, bucket: deps.Storage
+):
+    try:
+        {model_name.lower()}s = db.exec(select({model_name}))
+        file_url = await export(data={model_name.lower()}s, name="{model_name}", bucket=bucket, email=current_user.email)
+
+        return {{"message": "Data Export successful", "file_url": file_url}}
+    except Exception as e:
+        logger.error(f"Export {model_name.lower()}s error: {{e}}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
 """
 
 def make_controller(model_name: str = None):

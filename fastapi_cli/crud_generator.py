@@ -3,11 +3,14 @@ import os
 
 def generate_crud_file(model_name: str):
     template = f"""
+from typing import Any, Dict
 from sqlmodel import Session, select
 
 from core.utils import generate_slug
 from crud.base import CRUDBase
 from models.{model_name.lower()} import {model_name}, {model_name}Create, {model_name}Update
+
+from core.logging import logger
 
 
 class CRUD{model_name}(CRUDBase[{model_name}, {model_name}Create, {model_name}Update]):
@@ -20,6 +23,20 @@ class CRUD{model_name}(CRUDBase[{model_name}, {model_name}Create, {model_name}Up
         db.commit()
         db.refresh(db_obj)
         return db_obj
+
+    async def bulk_upload(self, db: Session, *, records: list[Dict[str, Any]]) -> None:
+        for {model_name.lower()} in records:
+            try:
+                if model := db.exec(
+                    select({model_name}).where({model_name}.name == {model_name.lower()}.get("slug"))
+                ).first():
+                    model.sqlmodel_update({model_name.lower()})
+                else:
+                    model = {model_name}(**{model_name.lower()})
+                    db.add(model)
+                db.commit()
+            except Exception as e:
+                logger.error(e)
 
 {model_name.lower()} = CRUD{model_name}({model_name})
 """

@@ -102,3 +102,8 @@ dmypy.json
 
 # Local IDE settings
 .idea/
+
+# Special
+crud/
+api/
+models/
